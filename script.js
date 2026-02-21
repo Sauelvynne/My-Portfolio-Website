@@ -283,3 +283,51 @@ function paintBackground() {
 bgImage.onload = paintBackground;
 paintBackground();
 window.addEventListener('resize', paintBackground);
+
+
+//BGMusic Toggle
+const bgMusic = document.getElementById('bg-music');
+const musicToggle = document.getElementById('music-toggle');
+const musicIcon = document.getElementById('music-icon');
+const musicTitle = document.getElementById('music-title');
+
+bgMusic.volume = 0.4;
+
+let musicStarted = false;
+let titleTimeout = null;
+
+function showMusicTitle() {
+    // Clear any existing fade-out timer
+    clearTimeout(titleTimeout);
+    musicTitle.classList.add('show');
+
+    // Fade out after 3 seconds
+    titleTimeout = setTimeout(() => {
+        musicTitle.classList.remove('show');
+    }, 3000);
+}
+
+document.addEventListener('click', () => {
+    if (!musicStarted) {
+        bgMusic.play().catch(() => {});
+        musicIcon.src = 'images/Sound-On.png';
+        musicStarted = true;
+        showMusicTitle();
+    }
+});
+
+musicToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (bgMusic.paused) {
+        bgMusic.play();
+        musicIcon.src = 'images/Sound-On.png';
+        showMusicTitle();
+    } else {
+        bgMusic.pause();
+        musicIcon.src = 'images/Sound-Mute.png';
+        // Hide title immediately when muted
+        clearTimeout(titleTimeout);
+        musicTitle.classList.remove('show');
+    }
+    playSound();
+});
