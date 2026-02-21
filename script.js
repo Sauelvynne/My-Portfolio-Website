@@ -13,8 +13,6 @@ const popupCloses = document.querySelectorAll('.popup-close');
 const emailButton = document.getElementById('email-button');
 const clickSound = document.getElementById('click-sound');
 
-
-
 // Function to play sound (WIP)
 function playSound() {
     if (!clickSound) return;
@@ -80,7 +78,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Minimize functionality (discontinued)
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         document.querySelectorAll('.popup.show').forEach(popup => hidePopup(popup));
@@ -95,8 +92,6 @@ const lightboxCaption = document.getElementById('lightbox-caption');
 const lightboxClose = document.querySelector('.lightbox-close');
 
 let animationPaused = false;
-
-// Lightbox functions
 
 document.addEventListener('click', (e) => {
     const img = e.target.closest('.gallery-image');
@@ -135,110 +130,156 @@ lightbox.addEventListener('click', (e) => {
 
 
 
-// FIREFLIES BACKGROUND ANIMATION all credit goes to Michal from CodePen.io
-const canvas = document.getElementById("canvas");
+//BEE BACKGROUND ANIMATION 
+// Improved Fireflies background animation by Michal from CodePen.io
 
-let c = init("canvas"),
-    w = canvas.width = window.innerWidth,
-    h = canvas.height = window.innerHeight;
-//initiation
+const BEE_SIZE = 40;
+const MAX_BEES = 20;
 
-class firefly{
-  constructor(){
-    this.x = Math.random()*w;
-    this.y = Math.random()*h;
-    this.s = Math.random()*2;
-    this.ang = Math.random()*2*Math.PI;
-    this.v = this.s*this.s/4;
-  }
-  move(){
-    this.x += this.v*Math.cos(this.ang);
-    this.y += this.v*Math.sin(this.ang);
-    this.ang += Math.random()*20*Math.PI/180-10*Math.PI/180;
-  }
-  show(){
-    c.beginPath();
-    c.arc(this.x,this.y,this.s,0,2*Math.PI);
-    c.fillStyle="#fddba3";
-    c.fill();
-  }
+let w = window.innerWidth;
+let h = window.innerHeight;
+
+function applyBeeStyles(el) {
+    el.style.position = 'fixed';
+    el.style.width = BEE_SIZE + 'px';
+    el.style.height = BEE_SIZE + 'px';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '1';
+    el.style.imageRendering = 'pixelated';
+    el.style.display = 'none';
 }
 
-let f = [];
+class Bee {
+    constructor(randomStart = false) {
+        this.elRight = document.createElement('img');
+        this.elRight.src = 'images/rightbee.gif';
+        applyBeeStyles(this.elRight);
+        document.body.appendChild(this.elRight);
 
-function draw() {
-  if(f.length < 100){
-    for(let j = 0; j < 10; j++){
-     f.push(new firefly());
-  }
-     }
-  //animation
-  for(let i = 0; i < f.length; i++){
-    f[i].move();
-    f[i].show();
-    if(f[i].x < 0 || f[i].x > w || f[i].y < 0 || f[i].y > h){
-       f.splice(i,1);
-       }
-  }
-}
+        this.elLeft = document.createElement('img');
+        this.elLeft.src = 'images/leftbee.gif';
+        applyBeeStyles(this.elLeft);
+        document.body.appendChild(this.elLeft);
 
-let mouse = {};
-let last_mouse = {};
-
-canvas.addEventListener(
-  "mousemove",
-  function(e) {
-    last_mouse.x = mouse.x;
-    last_mouse.y = mouse.y;
-
-    mouse.x = e.pageX - this.offsetLeft;
-    mouse.y = e.pageY - this.offsetTop;
-  },
-  false
-);
-function init(elemid) {
-  let canvas = document.getElementById(elemid),
-    c = canvas.getContext("2d"),
-    w = (canvas.width = window.innerWidth),
-    h = (canvas.height = window.innerHeight);
-  c.fillStyle = "rgba(30,30,30,1)";
-  c.fillRect(0, 0, w, h);
-  return c;
-}
-
-window.requestAnimFrame = (function() {
-  return (
-    window.requestAnimationFrame ||
-    window.webkitRequestAnimationFrame ||
-    window.mozRequestAnimationFrame ||
-    window.oRequestAnimationFrame ||
-    window.msRequestAnimationFrame ||
-    function(callback) {
-      window.setTimeout(callback);
+        this.facingRight = null;
+        this.reset(randomStart);
     }
-  );
-});
 
-function loop() {
-  window.requestAnimFrame(loop);
-  c.clearRect(0, 0, w, h);
-  draw();
+    reset(randomStart = false) {
+        if (randomStart) {
+            this.x = Math.random() * w;
+            this.y = Math.random() * h;
+        } else {
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0)      { this.x = Math.random() * w; this.y = -BEE_SIZE; }
+            else if (edge === 1) { this.x = w + BEE_SIZE;      this.y = Math.random() * h; }
+            else if (edge === 2) { this.x = Math.random() * w; this.y = h + BEE_SIZE; }
+            else                 { this.x = -BEE_SIZE;          this.y = Math.random() * h; }
+        }
+
+        this.speed = 0.5 + Math.random() * 1.5;
+        this.ang = Math.random() * 2 * Math.PI;
+        this.vx = this.speed * Math.cos(this.ang);
+        this.vy = this.speed * Math.sin(this.ang);
+
+        this.wobbleAngle  = Math.random() * Math.PI * 2;
+        this.wobbleSpeed  = 0.03 + Math.random() * 0.04;
+        this.wobbleAmount = 0.08 + Math.random() * 0.1;
+
+        this.facingRight = null;
+        this.updateSprite();
+        this.updatePosition();
+    }
+
+    updateSprite() {
+        const shouldFaceRight = this.vx >= 0;
+        if (shouldFaceRight !== this.facingRight) {
+            this.facingRight = shouldFaceRight;
+            this.elRight.style.display = this.facingRight ? 'block' : 'none';
+            this.elLeft.style.display  = this.facingRight ? 'none'  : 'block';
+        }
+    }
+
+    updatePosition() {
+        const left = (this.x - BEE_SIZE / 2) + 'px';
+        const top  = (this.y - BEE_SIZE / 2) + 'px';
+        this.elRight.style.left = left;
+        this.elRight.style.top  = top;
+        this.elLeft.style.left  = left;
+        this.elLeft.style.top   = top;
+    }
+
+    move() {
+        this.wobbleAngle += this.wobbleSpeed;
+        this.ang += Math.sin(this.wobbleAngle) * this.wobbleAmount;
+
+        this.vx = this.speed * Math.cos(this.ang);
+        this.vy = this.speed * Math.sin(this.ang);
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        this.updateSprite();
+        this.updatePosition();
+    }
+
+    isOffScreen() {
+        return (
+            this.x < -BEE_SIZE * 3 ||
+            this.x > w + BEE_SIZE * 3 ||
+            this.y < -BEE_SIZE * 3 ||
+            this.y > h + BEE_SIZE * 3
+        );
+    }
 }
 
-window.addEventListener("resize", function() {
-  (w = canvas.width = window.innerWidth),
-  (h = canvas.height = window.innerHeight);
-  loop();
-});
-
-
-function loop() {
-  if (!animationPaused) {
-    c.clearRect(0, 0, w, h);
-    draw();
-  }
-  requestAnimationFrame(loop);
+const bees = [];
+for (let i = 0; i < MAX_BEES; i++) {
+    bees.push(new Bee(true));
 }
 
-loop();
+function beeLoop() {
+    if (!animationPaused) {
+        for (let i = 0; i < bees.length; i++) {
+            bees[i].move();
+            if (bees[i].isOffScreen()) {
+                bees[i].reset(false);
+            }
+        }
+    }
+    requestAnimationFrame(beeLoop);
+}
 
+window.addEventListener('resize', function () {
+    w = window.innerWidth;
+    h = window.innerHeight;
+});
+
+beeLoop();
+
+
+//canvas image
+const canvas = document.getElementById('canvas');
+const c = canvas.getContext('2d');
+
+const bgImage = new Image();
+bgImage.src = 'images/grassbg.png';
+
+function paintBackground() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    if (bgImage.complete && bgImage.naturalWidth > 0) {
+        const pattern = c.createPattern(bgImage, 'repeat');
+        c.fillStyle = pattern;
+    } else {
+        // Fallback colour
+        c.fillStyle = '#008080';
+    }
+    c.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// Paint once image is loaded, and on every resize
+bgImage.onload = paintBackground;
+paintBackground();
+window.addEventListener('resize', paintBackground);
